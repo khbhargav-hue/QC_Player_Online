@@ -1798,3 +1798,52 @@ dropZone.addEventListener("drop", (e) => {
   if (!file) return;
   loadVideo(URL.createObjectURL(file), file.name);
 });
+
+// --- Enterprise Auto-Updater Engine (Direct GitHub Integration) --------------
+const GITHUB_REPO = "khbhargav-hue/QC_Player_Online";
+const updateSoftwareBtn = document.getElementById("updateSoftwareBtn");
+
+async function checkAndUpdateSoftware(isManual = true) {
+  if (updateSoftwareBtn) {
+    updateSoftwareBtn.disabled = true;
+    updateSoftwareBtn.textContent = "⏳ Checking GitHub…";
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits/main`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`GitHub returned status ${res.status}`);
+    const data = await res.json();
+    const latestSha = data.sha ? data.sha.substring(0, 7) : null;
+    const currentSha = localStorage.getItem("qc_player_sha");
+
+    if (currentSha && latestSha && currentSha === latestSha) {
+      if (isManual) flash(`✓ Software is up to date! (${latestSha})`);
+      if (updateSoftwareBtn) {
+        updateSoftwareBtn.disabled = false;
+        updateSoftwareBtn.textContent = "✓ Up to Date";
+        setTimeout(() => { if (updateSoftwareBtn) updateSoftwareBtn.textContent = "🔄 Check for Updates"; }, 3000);
+      }
+      return;
+    }
+
+    if (latestSha) {
+      if (updateSoftwareBtn) updateSoftwareBtn.textContent = "⚡ Updating…";
+      localStorage.setItem("qc_player_sha", latestSha);
+      flash(`⚡ Software updated to latest GitHub commit (${latestSha})! Reloading…`);
+      setTimeout(() => { location.reload(); }, 1200);
+      return;
+    }
+  } catch (err) {
+    console.warn("QC Player: GitHub update check failed", err);
+    if (isManual) flash("✕ Couldn't reach GitHub repo. Check network connection.");
+  } finally {
+    if (updateSoftwareBtn) {
+      updateSoftwareBtn.disabled = false;
+      updateSoftwareBtn.textContent = "🔄 Check for Updates";
+    }
+  }
+}
+
+if (updateSoftwareBtn) {
+  updateSoftwareBtn.addEventListener("click", () => checkAndUpdateSoftware(true));
+}

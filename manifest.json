@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "QC Player Online",
-  "version": "1.8.1",
+  "name": "QC Player Online Enterprise",
+  "version": "2.0.0",
   "description": "Frame-accurate video QC review streamed straight from Google Drive — nothing is ever saved to disk.",
   "action": {
     "default_title": "Open QC Player",
@@ -20,7 +20,7 @@
     "service_worker": "background.js"
   },
   "permissions": ["activeTab", "cookies", "unlimitedStorage", "declarativeNetRequest"],
-  "host_permissions": ["https://*.google.com/*"],
+  "host_permissions": ["<all_urls>"],
   "declarative_net_request": {
     "rule_resources": [{
       "id": "ruleset_1",
@@ -29,6 +29,6 @@
     }]
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; media-src 'self' blob: https://drive.google.com https://drive.usercontent.google.com; connect-src 'self' https://drive.google.com https://drive.usercontent.google.com; frame-src https://docs.google.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; media-src 'self' blob: https://drive.google.com https://drive.usercontent.google.com; connect-src 'self' https://drive.google.com https://drive.usercontent.google.com https://api.github.com https://raw.githubusercontent.com; frame-src https://docs.google.com;"
   }
 }

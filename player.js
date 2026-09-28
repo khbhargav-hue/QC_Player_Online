@@ -744,21 +744,19 @@ function extractConfirmDownloadUrl(html, fileId) {
 // plain <a> tags with reasonably loose matching, and logs the raw response
 // if nothing video-like turns up.
 async function fetchFolderFiles(folderId, resourceKey = null) {
+  const isExtension = location.protocol.startsWith("chrome-extension") || location.protocol.startsWith("moz-extension") || location.protocol === "file:";
   const isWebDeployment = location.protocol.startsWith("http");
   const queryParams = `id=${folderId}${resourceKey ? `&resourcekey=${resourceKey}` : ""}`;
   const rawTarget = `https://drive.google.com/embeddedfolderview?${queryParams}#list`;
 
-  const endpoints = [];
-  if (isWebDeployment) {
+  const endpoints = [rawTarget];
+  if (isWebDeployment && !isExtension) {
     endpoints.push(`/api/folder?${queryParams}`);
     endpoints.push(`${location.origin}/drive-proxy/embeddedfolderview?${queryParams}#list`);
-  } else {
-    endpoints.push(rawTarget);
+    endpoints.push(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawTarget)}`);
+    endpoints.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(rawTarget)}`);
+    endpoints.push(`https://corsproxy.io/?${encodeURIComponent(rawTarget)}`);
   }
-
-  endpoints.push(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawTarget)}`);
-  endpoints.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(rawTarget)}`);
-  endpoints.push(`https://corsproxy.io/?${encodeURIComponent(rawTarget)}`);
 
   let html = "";
   let lastError = null;
@@ -766,7 +764,7 @@ async function fetchFolderFiles(folderId, resourceKey = null) {
   for (const url of endpoints) {
     try {
       const isExternalProxy = url.startsWith("http") && !url.startsWith(location.origin);
-      const options = isExternalProxy ? {} : { credentials: isWebDeployment ? "omit" : "include" };
+      const options = isExternalProxy ? {} : { credentials: isExtension ? "include" : "omit" };
 
       const res = await fetch(url, options);
       if (/accounts\.google\.com/i.test(res.url)) throw new Error("SIGNIN_REQUIRED");
@@ -788,6 +786,9 @@ async function fetchFolderFiles(folderId, resourceKey = null) {
   if (!html) {
     if (lastError && lastError.message === "SIGNIN_REQUIRED") {
       throw lastError;
+    }
+    if (isWebDeployment && !isExtension) {
+      throw new Error("Browser CORS blocked direct Drive folder reading on web page. Please use QC Player as a Chrome Extension for 100% native folder access!");
     }
     throw new Error("Unable to fetch folder. Make sure link is set to 'Anyone with the link' in Google Drive.");
   }
@@ -838,8 +839,9 @@ async function fetchFolderFiles(folderId, resourceKey = null) {
 // I can't reproduce or debug from this sandbox, so reliability wins over
 // the (real, but no longer worth the risk) benefit of instant playback.
 async function resolveAndFetchDriveVideo(fileId, onProgress, signal) {
+  const isExtension = location.protocol.startsWith("chrome-extension") || location.protocol.startsWith("moz-extension") || location.protocol === "file:";
   const isWebDeployment = location.protocol.startsWith("http");
-  let url = isWebDeployment
+  let url = (isWebDeployment && !isExtension)
     ? `${location.origin}/drive-proxy/uc?export=download&id=${fileId}`
     : `https://drive.google.com/uc?export=download&id=${fileId}`;
   let hops = 0;
@@ -1621,10 +1623,12 @@ paneLabelB.addEventListener("click", () => triggerFilePicker("B"));
 
 driveGoA.addEventListener("click", () => startDriveWatch("A"));
 
-changeLinkBtn.addEventListener("click", () => {
-  changeLinkPopover.classList.toggle("show");
-  if (changeLinkPopover.classList.contains("show")) changeLinkInput.focus();
-});
+if (changeLinkBtn) {
+  changeLinkBtn.addEventListener("click", () => {
+    changeLinkPopover.classList.toggle("show");
+    if (changeLinkPopover.classList.contains("show")) changeLinkInput.focus();
+  });
+}
 changeLinkCloseBtn.addEventListener("click", () => changeLinkPopover.classList.remove("show"));
 function submitChangeLink() {
   const url = changeLinkInput.value.trim();

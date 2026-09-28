@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/drive-proxy/:path*",
+      "destination": "https://drive.google.com/:path*"
+    },
+    {
+      "source": "/",
+      "destination": "/player.html"
+    }
+  ]
+}

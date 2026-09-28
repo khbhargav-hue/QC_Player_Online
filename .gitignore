@@ -1,0 +1,6 @@
+# Ignore ZIP release packages
+*.zip
+
+# OS temporary files
+.DS_Store
+Thumbs.db

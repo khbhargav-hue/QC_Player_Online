@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>QC Player Online</title>
+  <link rel="stylesheet" href="player.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">QC</div>
+      <div>
+        <div class="title">QC Player Online</div>
+        <div class="subtitle">Streams from Drive — nothing is saved to disk</div>
+      </div>
+    </div>
+    <div class="headerActions">
+      <button id="swapSidesBtn" class="iconOnly" title="Swap sides (S)">⬌</button>
+      <button id="compareBtn" class="iconOnly" title="Compare two videos side-by-side">▥</button>
+      <button id="scriptBtn" class="iconOnly" title="Review a script alongside the video">📄</button>
+      <button id="fsBtn" class="iconOnly" title="Fullscreen (F)">⛶</button>
+      <button id="shortcutsBtn" class="iconOnly" title="Keyboard shortcuts">⌨</button>
+      <button id="openBtn" class="secondary">Choose Local File</button>
+      <input id="fileInput" type="file" accept="video/*" style="display:none;">
+    </div>
+  </header>
+
+  <main>
+    <section id="dropZone" class="drop-zone">
+      <div id="paneA" class="pane">
+        <div id="videoStage" class="videoStage">
+          <video id="video" preload="metadata"></video>
+          <img id="stageImg" class="stageImg" style="display:none;" alt="Image preview">
+          <div id="guidesA" class="guides">
+            <div class="safeArea action">
+              <span class="tick t"></span><span class="tick b"></span><span class="tick l"></span><span class="tick r"></span>
+            </div>
+            <div class="safeArea title">
+              <span class="tick t"></span><span class="tick b"></span><span class="tick l"></span><span class="tick r"></span>
+            </div>
+            <div class="centerCross">
+              <span class="ch-v"></span><span class="ch-h"></span>
+            </div>
+          </div>
+          <div id="rulerLines" class="rulerLines"></div>
+        </div>
+        <div id="rulerCorner" class="rulerCorner"></div>
+        <div id="rulerTop" class="rulerTop">
+          <span style="left:0%">0</span><span style="left:10%">10</span><span style="left:20%">20</span>
+          <span style="left:30%">30</span><span style="left:40%">40</span><span style="left:50%">50</span>
+          <span style="left:60%">60</span><span style="left:70%">70</span><span style="left:80%">80</span>
+          <span style="left:90%">90</span><span style="left:100%">100</span>
+        </div>
+        <div id="rulerLeft" class="rulerLeft">
+          <span style="top:0%">0</span><span style="top:10%">10</span><span style="top:20%">20</span>
+          <span style="top:30%">30</span><span style="top:40%">40</span><span style="top:50%">50</span>
+          <span style="top:60%">60</span><span style="top:70%">70</span><span style="top:80%">80</span>
+          <span style="top:90%">90</span><span style="top:100%">100</span>
+        </div>
+        <div id="emptyState" class="empty">
+          <div class="uploadIcon">＋</div>
+          <h2>Watch a Drive video</h2>
+          <p>Streams straight into the player — never written to disk. Paste a single video link, or a whole folder link</p>
+          <div class="driveGroup">
+            <input id="driveUrlA" type="text" placeholder="Paste a Google Drive video or folder link" title="Uses your Google login in this browser — sign in to Drive normally first if needed">
+            <button id="driveGoA" class="primary">Watch</button>
+          </div>
+          <div class="orDivider">— or —</div>
+          <button id="openEmpty" class="secondary">Choose a Local File</button>
+        </div>
+        <div id="loadingA" class="loadingOverlay">
+          <div class="loadingLabel" id="loadingLabelA"></div>
+          <div class="progressTrack"><div id="progressFillA" class="progressFill"></div></div>
+          <div class="loadingPercent" id="loadingPercentA">0%</div>
+        </div>
+      </div>
+
+      <div id="paneB" class="pane paneB">
+        <video id="videoB" preload="metadata" muted></video>
+        <div id="paneLabelB" class="paneLabel" title="Click to change Video B"></div>
+        <div id="emptyStateB" class="empty">
+          <div class="uploadIcon">＋</div>
+          <h2>Video B</h2>
+          <p>Optional — for side-by-side compare</p>
+          <div class="driveGroup">
+            <input id="driveUrlB" type="text" placeholder="Paste a Google Drive video share link">
+            <button id="driveGoB" class="primary">Watch</button>
+          </div>
+          <div class="orDivider">— or —</div>
+          <button id="openB" class="secondary">Choose a Local File</button>
+        </div>
+        <div id="loadingB" class="loadingOverlay">
+          <div class="loadingLabel" id="loadingLabelB"></div>
+          <div class="progressTrack"><div id="progressFillB" class="progressFill"></div></div>
+          <div class="loadingPercent" id="loadingPercentB">0%</div>
+        </div>
+        <div id="paneBBar" class="paneBar">
+          <input id="timelineB" type="range" min="0" max="0" step="0.001" value="0" title="Video B timeline (independent of Video A)">
+          <div id="timecodeB" class="paneBarTimecode">00:00:00:00</div>
+          <button id="syncBtn" class="iconBtn small" title="Keep Video B locked to Video A's position">🔗 Synced</button>
+        </div>
+      </div>
+
+      <div id="paneScript" class="pane paneScript">
+        <div class="scriptToolbar">
+          <input id="scriptDocUrl" type="text" class="scriptUrlInput" placeholder="Paste Google Doc share link, then press Enter" title="Doc must be shared as “Anyone with the link can view”">
+          <button id="scriptEditModeBtn" class="iconBtn small" title="Try showing comments and editing (experimental — Google may not allow this to embed)">✎ Edit Mode</button>
+        </div>
+        <div class="scriptFrameWrap">
+        <iframe id="scriptFrame" class="scriptFrame" title="Script document"></iframe>
+        </div>
+      </div>
+
+      <div id="fsBar" class="fsBar">
+        <button id="fsPrevFrame" class="iconOnly" title="Previous frame (Left Arrow)">◀</button>
+        <button id="fsPlayBtn" class="playBtn" title="Play/Pause (Space)">▶</button>
+        <button id="fsNextFrame" class="iconOnly" title="Next frame (Right Arrow)">▶</button>
+        <div id="fsTimecode" class="fsTimecode">00:00:00:00</div>
+        <input id="fsGotoInput" type="text" class="fsGotoInput" maxlength="11" placeholder="HH:MM:SS:FF" title="Paste or type a timecode, Enter to jump">
+        <button id="fsCopyBtn" class="iconOnly" title="Copy timestamp (C)">⧉</button>
+        <span class="fsDivider"></span>
+        <button id="fsSetInBtn" class="iconOnly" title="Set loop in point (I)">[</button>
+        <button id="fsSetOutBtn" class="iconOnly" title="Set loop out point (O)">]</button>
+        <button id="fsLoopBtn" class="iconOnly" title="Toggle A/B loop (L)">⟲</button>
+        <span class="fsDivider"></span>
+        <button id="fsExitBtn" class="iconOnly" title="Exit fullscreen (Esc)">✕</button>
+      </div>
+
+      <!-- Persistent tab on the right edge — always visible, opens/closes the tray -->
+      <button id="trayToggleBtn" class="trayToggleBtn" title="File tray (all folder files)">☰</button>
+
+      <!-- Slide-in side tray -->
+      <div id="tray" class="tray">
+        <div class="trayHeader">
+          <button id="trayBackBtn" class="iconOnly" title="Go back to parent folder" style="display:none; margin-right:4px;">◀</button>
+          <span id="trayFolderName" class="trayFolderName">Files</span>
+          <div class="traySpacer"></div>
+          <button id="trayGridBtn" class="iconOnly" title="Grid view">▥</button>
+          <button id="trayListBtn" class="iconOnly active" title="List view">☰</button>
+          <button id="startFreshBtn" class="iconOnly" title="Clear everything and start fresh" style="color:#e05252;">🗑</button>
+        </div>
+        <div id="trayFileList" class="trayFileList"></div>
+      </div>
+
+      <div id="toast" class="toast">✓ Copied</div>
+    </section>
+
+    <div id="shortcutsModal" class="shortcutsModal">
+      <div class="shortcutsCard">
+        <div class="shortcutsHeader">
+          <span>Keyboard Shortcuts</span>
+          <button id="shortcutsCloseBtn" class="linkBtn">✕ Close</button>
+        </div>
+        <div class="shortcutsGrid">
+          <div><kbd>Space</kbd><span>Play / pause</span></div>
+          <div><kbd>←</kbd><span>Previous frame</span></div>
+          <div><kbd>→</kbd><span>Next frame</span></div>
+          <div><kbd>C</kbd><span>Copy timestamp</span></div>
+          <div><kbd>I</kbd><span>Set loop in point</span></div>
+          <div><kbd>O</kbd><span>Set loop out point</span></div>
+          <div><kbd>L</kbd><span>Toggle A/B loop</span></div>
+          <div><kbd>R</kbd><span>Toggle ruler</span></div>
+          <div><kbd>F</kbd><span>Toggle fullscreen</span></div>
+          <div><kbd>H</kbd><span>Show/hide fullscreen bar</span></div>
+          <div><kbd>S</kbd><span>Swap sides (Compare/Script)</span></div>
+          <div><kbd>Esc</kbd><span>Exit fullscreen</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="annotateModal" class="annotateModal">
+      <div class="annotateCard">
+        <div class="annotateToolbar">
+          <div class="annotateTools">
+            <button class="toolBtn active" data-tool="pen" title="Pen">✎</button>
+            <button class="toolBtn" data-tool="marker" title="Marker highlighter">🖊</button>
+            <button class="toolBtn" data-tool="rect" title="Rectangle">▭</button>
+            <button class="toolBtn" data-tool="circle" title="Circle">◯</button>
+            <button class="toolBtn" data-tool="arrow" title="Arrow">↗</button>
+          </div>
+          <div class="annotateColors">
+            <button class="colorSwatch active" data-color="#ff3b6b" style="background:#ff3b6b"></button>
+            <button class="colorSwatch" data-color="#ffd23b" style="background:#ffd23b"></button>
+            <button class="colorSwatch" data-color="#3bd1ff" style="background:#3bd1ff"></button>
+            <button class="colorSwatch" data-color="#ffffff" style="background:#ffffff"></button>
+          </div>
+          <div class="annotateSpacer"></div>
+          <button id="annotateUndo" class="iconBtn small">↺ Undo</button>
+          <button id="annotateClear" class="iconBtn small">✕ Clear</button>
+          <button id="annotateCancel" class="secondary">Cancel</button>
+          <button id="annotateSave" class="primary">Save</button>
+        </div>
+        <div class="annotateCanvasWrap">
+          <canvas id="annotateCanvas"></canvas>
+        </div>
+        <p class="annotateHint">Pick a tool, mark the issue, then Save.</p>
+      </div>
+    </div>
+
+    <section class="controls">
+      <input id="timeline" type="range" min="0" max="0" step="0.001" value="0">
+
+      <div class="allControlsRow">
+        <button id="prevFrame" class="iconOnly" title="Previous frame (Left Arrow)">◀</button>
+        <button id="playBtn" class="playBtn primary" title="Play/Pause (Space)">▶</button>
+        <button id="nextFrame" class="iconOnly" title="Next frame (Right Arrow)">▶</button>
+        <button id="copyBtn" class="iconOnly copyBtn" title="Copy timestamp (C)">⧉</button>
+        <span class="rowDivider"></span>
+
+        <div id="timecode" class="timecode">00:00:00:00</div>
+        <div class="gotoGroup">
+          <input id="gotoInput" type="text" maxlength="11" placeholder="HH:MM:SS:FF" title="Paste a timecode, or type it and press Enter, to jump there">
+          <button id="gotoBtn" class="iconBtn small" title="Jump to timecode">Go</button>
+        </div>
+        <span class="rowDivider"></span>
+
+        <div id="playlistRow" class="playlistRow">
+          <button id="prevVideoBtn" class="iconOnly" title="Previous video in folder">⏮</button>
+          <span id="playlistPosition" class="playlistPosition"></span>
+          <button id="nextVideoBtn" class="iconOnly" title="Next video in folder">⏭</button>
+          <span class="rowDivider"></span>
+        </div>
+
+        <button id="muteBtn" class="iconOnly" title="Mute/unmute">🔊</button>
+        <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="1" title="Volume">
+        <select id="speedSelect" title="Playback speed">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <span class="rowDivider"></span>
+
+        <button id="setInBtn" class="iconOnly" title="Set loop in point (I)">[</button>
+        <button id="setOutBtn" class="iconOnly" title="Set loop out point (O)">]</button>
+        <button id="loopBtn" class="iconOnly" title="Toggle A/B loop (L)">⟲</button>
+        <span id="loopLabel" class="loopLabel">IN —  OUT —</span>
+        <span class="rowDivider"></span>
+
+        <button id="guidesBtn" class="iconOnly" title="Toggle safe-area guides">▦</button>
+        <button id="rulerBtn" class="iconOnly" title="Show ruler (R)">📏</button>
+        <button id="clearRulerBtn" class="iconOnly" title="Remove all guide lines">✕</button>
+        <button id="snapBtn" class="iconOnly" title="Save current frame as an image">📷</button>
+        <span class="rowDivider"></span>
+
+        <span class="statChip">FPS <input id="fps" class="fpsInput" value="—" title="Auto-detected from playback — click to correct if it looks off"></span>
+        <span class="statChip"><strong id="resolution">—</strong></span>
+        <span class="statChip"><strong id="duration">—</strong></span>
+        <span class="statChip fileChip" id="fileName" title="No video loaded">No video loaded</span>
+        <button id="changeLinkBtn" class="iconOnly" title="Change or reload the video link">🔄</button>
+
+        <div id="status" class="status">Ready</div>
+        <span class="credit">v1.8.1</span>
+      </div>
+
+      <div id="changeLinkPopover" class="changeLinkPopover">
+        <input id="changeLinkInput" type="text" placeholder="Paste a new Drive video or folder link">
+        <button id="changeLinkGoBtn" class="primary">Load</button>
+        <button id="changeLinkCloseBtn" class="linkBtn">✕</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="player.js"></script>
+</body>
+</html>

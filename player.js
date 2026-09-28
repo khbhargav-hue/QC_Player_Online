@@ -69,6 +69,7 @@ const syncBtn = document.getElementById("syncBtn");
 const driveUrlA = document.getElementById("driveUrlA");
 const driveGoA = document.getElementById("driveGoA");
 const changeLinkBtn = document.getElementById("changeLinkBtn");
+if (changeLinkBtn) changeLinkBtn.remove();
 const changeLinkPopover = document.getElementById("changeLinkPopover");
 const changeLinkInput = document.getElementById("changeLinkInput");
 const changeLinkGoBtn = document.getElementById("changeLinkGoBtn");
@@ -1831,11 +1832,16 @@ async function checkAndUpdateSoftware(isManual = true) {
     }
 
     if (latestSha) {
-      if (updateSoftwareBtn) updateSoftwareBtn.textContent = "⚡ Updating…";
-      localStorage.setItem("qc_player_sha", latestSha);
-      flash(`⚡ Software updated to latest GitHub commit (${latestSha})! Reloading…`);
-      setTimeout(() => { location.reload(); }, 1200);
-      return;
+      if (updateSoftwareBtn) updateSoftwareBtn.textContent = "⚡ Downloading Update…";
+      const jsRes = await fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/player.js?t=${Date.now()}`);
+      if (jsRes.ok) {
+        const latestJs = await jsRes.text();
+        localStorage.setItem("qc_player_sha", latestSha);
+        localStorage.setItem("qc_player_live_js", latestJs);
+        flash(`⚡ Software updated to commit (${latestSha})! Reloading…`);
+        setTimeout(() => { location.reload(); }, 1000);
+        return;
+      }
     }
   } catch (err) {
     console.warn("QC Player: GitHub update check failed", err);
